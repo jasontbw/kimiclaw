@@ -29,6 +29,8 @@ You wake up fresh each session. These files are your continuity:
 | 项目层 | `memory/projects.md` | 各项目当前状态、待办、关键决策 | 项目有进展时 |
 | 教训层 | `memory/lessons.md` | 踩过的坑、解决方案，按严重程度分级 | 遇到问题时 |
 | 日志层 | `memory/YYYY-MM-DD.md` | 每日原始记录 | 当天实时写入 |
+| **提炼层** | **`learnings/YYYY-MM-DD.md`** | **每日学习总结，技术知识和经验提炼** | **每天晚上9点总结后** |
+| **共享层** | **`share-knowledge/`** | **通用知识，多AI共享** | **持续积累** |
 
 ### 🧠 MEMORY.md - 索引层（主 session 专属）
 
@@ -40,10 +42,42 @@ You wake up fresh each session. These files are your continuity:
 ### 📝 写入规则
 
 1. **日志写入 `memory/YYYY-MM-DD.md`** — 记结论不记过程
-2. **项目状态** — 有进展时同步更新 `memory/projects.md`
-3. **教训** — 踩坑后立即写入 `memory/lessons.md`
-4. **MEMORY.md** — 只在索引变化时更新，保持精简
-5. **铁律**: "Mental notes" don't survive session restarts. Files do.
+2. **学习总结写入 `learnings/YYYY-MM-DD.md`** — 每天晚上9点提炼当日技术知识、踩坑记录、经验总结
+3. **项目状态** — 有进展时同步更新 `memory/projects.md`
+4. **教训** — 踩坑后立即写入 `memory/lessons.md`
+5. **MEMORY.md** — 只在索引变化时更新，保持精简
+6. **共享知识** — 通用知识写入 `share-knowledge/`，供多AI共享
+7. **铁律**: "Mental notes" don't survive session restarts. Files do.
+
+### 🔔 关键词触发记忆（强制执行）
+
+**当用户说出以下关键词时，立即记录：**
+- "记下来"
+- "记住"
+- "听着"
+- "记着"
+
+**执行流程：**
+1. 立即识别关键词后的内容
+2. 整理为结构化格式
+3. 写入 `MEMORY.md` 的适当位置
+4. 反馈写入的具体内容给用户确认
+5. 执行 `git commit` 提交变更
+
+**示例：**
+> 用户："记下来，明天下午3点有个会议"
+> 
+> 你的动作：
+> 1. 提取内容：明天下午3点有个会议
+> 2. 整理格式：
+>    ```markdown
+>    ### [TODO] 会议提醒
+>    - **时间**: 明天下午3点
+>    - **内容**: 会议
+>    - **标签**: #todo #meeting
+>    ```
+> 3. 写入 MEMORY.md
+> 4. git commit -m "📌 记录用户提醒：明天下午3点会议"
 
 ### 📋 日志格式模板
 
@@ -96,6 +130,32 @@ You wake up fresh each session. These files are your continuity:
 - 任何系统级操作
 
 **唯一例外**: 用户明确说"先斩后奏"或"你决定"时，可以执行后报告。
+
+### 🔄 Git 同步规则（强制执行）
+
+**每次修改记忆文件后，必须执行 Git 同步：**
+
+1. **修改后提交**
+   ```bash
+   cd /root/.openclaw/workspace
+   git add -A
+   git commit -m "📝 简短描述修改内容"
+   ```
+
+2. **推送到远程**（如配置了远程仓库）
+   ```bash
+   git push origin master
+   ```
+
+**触发时机：**
+- 写入任何 memory/ 文件后
+- 更新 MEMORY.md 后
+- 修改 AGENTS.md 后
+- 用户说"记下来"并记录后
+
+**Git 仓库信息：**
+- 本地仓库：`/root/.openclaw/workspace/.git`
+- 远程仓库：（待配置，用户需提供）
 
 ## External vs Internal
 
