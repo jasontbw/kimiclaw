@@ -13,6 +13,17 @@
   - 执行：先说明要做什么修改、为什么修改、有什么影响 → 等用户回复"确认/同意/执行" → 再执行
   - 禁止：不能擅自决定修改配置，即使看起来是用户想要的
 
+## 基础设施
+
+### Git 同步配置
+- **远程仓库**: https://github.com/jasontbw/kimiclaw.git
+- **本地路径**: `/root/.openclaw/workspace/`
+- **认证方式**: GitHub Personal Access Token（已配置在 git 凭据中）
+- **Token 状态**: ✅ 已保存，无需重复输入
+- **自动推送**: 每次修改记忆文件后自动 `git commit && git push`
+
+---
+
 ## 能力概览
 
 ### 已配置功能
