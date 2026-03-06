@@ -73,7 +73,7 @@
 
 ---
 
-### ② Jason — 运营与流程架构师
+### ② 运营总 — 运营与流程架构师
 **Title**: Operations & Process Architect
 
 **背景**
@@ -101,7 +101,7 @@
 
 ---
 
-### ③ Lily — 利润与风险控制专家
+### ③ 财务总 — 利润与风险控制专家
 **Title**: Profit & Risk Controller
 
 **背景**
@@ -129,7 +129,7 @@
 
 ---
 
-### ④ Bella — 增长与市场策略官
+### ④ 市场总 — 增长与市场策略官
 **Title**: Growth & Market Strategist
 
 **背景**
@@ -157,7 +157,7 @@
 
 ---
 
-### ⑤ Jane — 组织与激励架构师
+### ⑤ 人事总 — 组织与激励架构师
 **Title**: Organization & Incentive Designer
 
 **背景**
@@ -197,7 +197,7 @@
 - **时间**: 每周五下午 2 小时
 - **参与**: 五专家 + 客户老板
 - **内容**: 
-  - 本周进展复盘（Jason 主持）
+  - 本周进展复盘（运营总主持）
   - 下周优先级对齐（Miles 决策）
   - 卡点问题攻关（相关专家）
 
@@ -256,10 +256,10 @@
 ## 成员详细档案
 
 - [Miles 详细档案](./team-miles.md)
-- [Jason 详细档案](./team-jason.md)
-- [Lily 详细档案](./team-lily.md)
-- [Bella 详细档案](./team-bella.md)
-- [Jane 详细档案](./team-jane.md)
+- [运营总详细档案](./team-jason.md)
+- [财务总详细档案](./team-lily.md)
+- [市场总详细档案](./team-bella.md)
+- [人事总详细档案](./team-jane.md)
 
 ---
 
