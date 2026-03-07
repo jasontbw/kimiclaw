@@ -283,10 +283,175 @@ curl -X POST 'https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal
 
 ## Schema Pitfalls (Battle-tested)
 
-- **No Markdown tables in write ops** — use bullet lists instead (prevents schema errors)
+- **No Markdown tables in write ops via Convert API** — use bullet lists instead (prevents schema errors)
 - **No nested code blocks inside lists** — Feishu schema validation is strict on nesting depth
 - **Callout is a container** — always requires a two-step create (container first, then children)
 - **Each list item = separate Block** — don't try to put multiple items in one block
+
+## Table Support (New)
+
+### Overview
+
+This skill now includes **Table Support** via the Block API. Tables can be created by:
+1. Using the provided Node.js scripts
+2. Manual Block construction
+
+### Method 1: Using Scripts (Recommended)
+
+Two helper scripts are provided:
+
+#### 1. Markdown to Feishu Converter
+
+**File**: `md-table-to-feishu.js`
+
+Converts Markdown (including tables) to Feishu Block structure:
+
+```bash
+node md-table-to-feishu.js input.md output.json
+```
+
+**Supported Markdown**:
+```markdown
+# Heading 1
+## Heading 2
+
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+
+- Bullet item
+1. Numbered item
+
+Regular paragraph text.
+```
+
+#### 2. Write Document with Tables
+
+**File**: `write-doc-with-table.js`
+
+Full workflow: Create document + Write content with tables:
+
+```bash
+node write-doc-with-table.js \
+  --token "u-xxxxxxxx" \
+  --folder "RTNGxxxxxxxx" \
+  --title "Document Title" \
+  --file "input.md"
+```
+
+**Parameters**:
+- `--token`: Feishu access token (tenant_access_token)
+- `--folder`: Target folder token
+- `--title`: Document title
+- `--file`: Input markdown file path
+
+### Method 2: Manual Block Construction
+
+Table creation requires **two steps**:
+
+#### Step 1: Create Table Container (block_type: 31)
+
+```json
+{
+  "block_type": 31,
+  "table": {
+    "property": {
+      "row_size": 3,
+      "column_size": 3,
+      "column_width": [200, 200, 200],
+      "merge_info": []
+    },
+    "cells": ["cell_0", "cell_1", "cell_2", "cell_3", "cell_4", "cell_5", "cell_6", "cell_7", "cell_8"]
+  }
+}
+```
+
+#### Step 2: Create Table Cells (block_type: 32)
+
+After creating the table, use each `cell_id` from `cells` array as parent:
+
+```json
+{
+  "block_type": 32,
+  "table_cell": {
+    "children": [
+      {
+        "block_type": 2,
+        "text": {
+          "elements": [{ "text_run": { "content": "Cell content" } }]
+        }
+      }
+    ]
+  }
+}
+```
+
+**Important**: Cell blocks must be created as children of the corresponding cell_id.
+
+### Table Block Structure
+
+```
+Document (Page)
+  +-- Table Block (block_type=31)
+        +-- Cell 1 (cell_0)
+        |     +-- Text Block (block_type=2)
+        +-- Cell 2 (cell_1)
+        |     +-- Text Block
+        +-- ...
+```
+
+### API Call Sequence
+
+```
+1. POST /documents/{doc_id}/blocks/{doc_id}/children
+   Body: { "children": [tableBlock] }
+   
+2. For each cell:
+   POST /documents/{doc_id}/blocks/{cell_id}/children
+   Body: { "children": [cellContent] }
+```
+
+### Limitations
+
+- Max 20 columns per table
+- Max 100 rows per table
+- Cell content limited to text blocks (no nested tables)
+- Column widths should sum to ~600-800 pixels for good display
+
+### Example: Complete Table Creation
+
+```javascript
+const https = require('https');
+
+async function createTableExample(token, documentId) {
+  // 1. Create table container
+  const tableBlock = {
+    block_type: 31,
+    table: {
+      property: {
+        row_size: 2,
+        column_size: 2,
+        column_width: [300, 300],
+        merge_info: []
+      },
+      cells: ["c1", "c2", "c3", "c4"]
+    }
+  };
+  
+  // POST table block...
+  
+  // 2. Create cell contents
+  const cells = [
+    { id: "c1", content: "Header 1", bold: true },
+    { id: "c2", content: "Header 2", bold: true },
+    { id: "c3", content: "Row 1 Col 1" },
+    { id: "c4", content: "Row 1 Col 2" }
+  ];
+  
+  // POST each cell content...
+}
+```
 
 ## References
 
