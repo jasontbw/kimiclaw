@@ -1,144 +1,133 @@
 ---
 name: feishu-approval
-description: 飞书审批流管理 Skill。获取审批定义、提交审批实例、添加评论、转办、撤回。当需要自动化提交审批或管理审批流程时使用此 Skill。
+description: 飞书审批。创建审批实例、查询审批状态。
 required_permissions:
-  - approval:definition
   - approval:approval
-  - docs:permission.member:transfer
 ---
 
-# 飞书审批流管理
+# 飞书审批
 
-你是飞书审批自动化专家，负责通过 Approval v4 API 实现审批的提交、监控、评论与数据检索。
+通过 Approval API 创建和查询审批实例。
 
----
-
-## 一、API 基础信息
-
-| 项目 | 值 |
-|------|---|
-| Base URL | `https://open.feishu.cn/open-apis/approval/v4` |
-| 认证方式 | `Authorization: Bearer {tenant_access_token}` |
-| Content-Type | `application/json` |
+**Base URL**: `https://open.feishu.cn/open-apis/approval/v4`
 
 ---
 
-## 二、 审批流开发核心指南 (New)
+## 审批实例
 
-### 1. 消息驱动协作 (Bot Messages)
-机器人不仅可以发起审批，还能发送/更新审批相关的卡片消息，实现异步处理：
-- **发送审批机器人消息**：`POST /open-apis/approval/v4/messages`
-- **更新审批机器人消息**：`PUT /open-apis/approval/v4/messages/{message_id}`
-  - *场景*：当审批状态改变时，动态更新用户收到的卡片状态（如“已通过”），减少干扰。
+| API | 端点 | 方法 | 请求体示例 | 说明 |
+|-----|------|------|-----------|------|
+| 创建实例 | `/instances` | POST | `{"approval_code":"7C46...","user_id":"ou_xxx","form":"{\"widget1\":\"value1\"}"}` | 发起审批 |
+| 查询实例 | `/instances/{instance_id}` | GET | - | 获取审批状态 |
+| 审批操作 | `/instances/{instance_id}/approve` | POST | `{"comment":"同意","task_id":"xxx"}` | 同意/拒绝审批 |
+| 撤回审批 | `/instances/{instance_id}/cancel` | POST | `{"user_id":"ou_xxx"}` | 申请人撤回 |
+| 转交审批 | `/instances/{instance_code}/transfer` | POST | `{"user_id":"ou_xxx","transfer_user_id":"ou_yyy","comment":"转交"}` | 转交给他人 |
+| 催办审批 | `/instances/{instance_id}/urge` | POST | - | 发送催办提醒 |
+| 获取实例列表 | `/instances` | GET | 查询参数：`page_size=50&page_token=xxx&user_id=ou_xxx` | 支持筛选参数（分页） |
+| 查询实例详情 | `/instances/detail` | POST | `{"instance_code":"xxx"}` | 查询完整详情 |
 
-### 2. 高级数据检索与审计 (Audit & Search)
-针对大规模审批数据的管理能力：
-- **搜索审批定义**：`POST /open-apis/approval/v4/approvals/search`
-- **批量获取审批实例**：`POST /open-apis/approval/v4/instances/query`
-- **查询抄送列表**：`POST /open-apis/approval/v4/instances/search_cc`
-- **查看审批详情 (专用)**：`POST /open-apis/approval/v4/instances/query` (支持通过 ID 定位)
-- **精准搜索审批实例**：`POST /open-apis/approval/v4/instances/search` (支持状态、发起人、时间范围等多维审计)
-
-### 3. 事件实时监听 (Events)
-订阅以下事件实现自动化闭环：
-- `approval.instance.status_changed_v4`：全量感知实例状态变化。
-- `approval.task.status_changed_v4`：感知具体节点任务的状态流转。
-
----
-
-## 三、 典型业务操作
-
-### 1. 获取审批定义
-```
-GET /open-apis/approval/v4/approvals/{approval_code}
-```
-**实测心法**：`approval_code` 在管理后台导出。必须先解析表单控件 ID（如 `widget177...`），提交时必须精准匹配。
-
-### 2. 提交审批实例
-```
-POST /open-apis/approval/v4/instances?user_id_type=user_id
-```
+**创建实例**:
 ```json
 {
-  "approval_code": "xxx",
+  "approval_code": "7C468A54-8745-2245-9675-08B7C63E7A85",
   "user_id": "ou_xxx",
-  "form": "[{\"id\":\"widget1\",\"type\":\"input\",\"value\":\"说明\"}]"
-}
-```
-**注意**：`user_id` 类型建议优先使用 `user_id`（企业内唯一码）。
-
-### 3. 审批实例检索与审计
-```
-POST /open-apis/approval/v4/instances/search
-```
-**Payload 示例**：
-```json
-{
-  "user_id": "ou_xxx",
-  "approval_code": "7CC60280...",
-  "instance_start_time_from": "1770259200",
-  "instance_start_time_to": "1770739200"
+  "form": "{\"widget1\":\"value1\"}"
 }
 ```
 
 ---
 
-## 四、最佳实践
+## 审批任务
 
-1. **写后必审 (AI Audit)**：机器人发起审批后，应紧随一条评论说明 AI 自动核验的结果，增强审批人的信任感。
-2. **状态全链路追踪**：结合 Search 接口定期巡检 P0 级审批，若超时未处理，通过 IM 技能加急提醒。
-3. **表单扁平化**：控件 ID 极其冗长（如 `widget177...`），建议在 Skill 配置中硬编码 ID 映射表，提高代码可读性。
-
-
----
-
-
-# feishu-approval 技能总结 (教程脱敏版)
-
-### 一、 核心功能清单
-
-| 功能维度 | 具体能力 | 说明 |
-| :--- | :--- | :--- |
-| **实例自动发起** | 零代码填单提交 | 支持通过 API 自动填充复杂的审批表单控件（文本、数字、日期等）并一键发起流程。 |
-| **高级审计检索** | 多维实例搜索 | 支持按时间范围、状态（审批中/通过/拒绝）、发起人等多维度批量检索审批记录，实现自动化审计。 |
-| **动态消息管理** | 审批卡片更新 | 支持发送审批通知并动态更新已有消息卡片的状态，确保审批流状态与用户通知实时同步。 |
-| **审计留痕** | AI 决策评论 | 支持在审批单下自动追加 AI 审计评论，提供核验建议，增强人工审批的决策信心。 |
-| **全链路监听** | 事件实时感知 | 通过订阅实例状态变更事件，实现从发起、审批到反馈的自动化全闭环。 |
+| API | 端点 | 方法 | 请求体示例 | 说明 |
+|-----|------|------|-----------|------|
+| 获取任务列表 | `/tasks` | GET | - | 查询待办任务 |
+| 获取任务详情 | `/tasks/{task_id}` | GET | - | 查询任务详情 |
+| 审批任务 | `/tasks/{task_id}/approve` | POST | `{"comment":"同意"}` | 处理审批任务 |
+| 转交任务 | `/tasks/{task_id}/transfer` | POST | `{"transfer_user_id":"ou_xxx"}` | 转交任务 |
 
 ---
 
-### 二、 典型业务场景
+## 审批定义
 
-**差旅/费用自动审计与报销：**
-*   **场景**：员工发送报销指令后，AI 自动生成审批单。同时，AI 利用**高级检索接口**查询该员工当月已有的报销总额，若超过阈值，自动在审批单下添加“超额预警”评论。
-*   **价值**：将报销从“被动接收”变为“主动预审”，极大降低了财务部的初审工作量。
-
-**自动化权限巡检与回收：**
-*   **场景**：IT 管理员定期触发任务，AI 通过**审批搜索接口**拉取所有已过期的“临时权限申请单”，自动发起对应的权限回收流程。
-*   **价值**：确保公司数字资产的访问安全性，实现权限生命周期的闭环管理。
-
-**项目预算动态追踪：**
-*   **场景**：当新项目立项审批通过时，AI 自动监听**状态变更事件**，实时同步该项目的预算配额到多维表格看板。
-*   **价值**：消除跨部门信息不对称，实现预算执行进度的实时可视化。
+| API | 端点 | 方法 | 请求体示例 | 说明 |
+|-----|------|------|-----------|------|
+| 获取定义列表 | `/approvals` | GET | - | 查询所有审批模板 |
+| 获取定义详情 | `/approvals/{approval_code}` | GET | - | 查询模板详情 |
+| 获取定义表单 | `/approvals/{approval_code}/forms` | GET | - | 查询表单字段定义 |
 
 ---
 
-### 三、 实测注意事项（教程必写 · 尽量详细）
+## 审批抄送
 
-**控件 ID 的“唯一标识” (Critical)：**
-*   **风险**：审批表单的控件 ID（如 `widget177...`）是随机生成的。禁止在自动化逻辑中硬编码 ID。
-*   **对策**：教程必须强调「定义先行」原则。开发时应先调用 `get_approval_definition` 接口动态获取 Widget ID 列表。
-
-**消息 ID 的“生命周期管理”：**
-*   **坑点**：在执行“更新机器人消息卡片”时，必须缓存发送时的 `message_id`。
-*   **建议**：建议在数据库或多维表格中建立 `Instance_Code <-> Message_ID` 的映射表，以便后续状态更新时能够精准定位卡片。
-
-**时间戳的“精确审计”：**
-*   **注意**：在调用高级搜索接口（`instances/search`）时，时间范围参数需使用**秒级时间戳**。
-*   **技巧**：在教程中建议用户在搜索时预留 5-10 分钟的冗余量，以应对服务器间可能存在的同步延迟。
-
-**ID 类型的“全局一致性”：**
-*   **注意**：飞书审批对 `user_id` 类型极其挑剔。在调用所有搜索、提交接口时，务必显式声明 `user_id_type`（推荐优先使用企业内唯一的 `user_id`）。
+| API | 端点 | 方法 | 请求体示例 | 说明 |
+|-----|------|------|-----------|------|
+| 获取抄送列表 | `/cc` | GET | - | 查询抄送我的审批 |
+| 已读抄送 | `/cc/{instance_id}/read` | POST | - | 标记抄送已读 |
 
 ---
-*注：以上内容已脱敏。已保存至：`opensource/feishu-skills/feishu-approval/SUMMARY.md`*
+
+## 审批评论
+
+| API | 端点 | 方法 | 请求体示例 | 说明 |
+|-----|------|------|-----------|------|
+| 添加评论 | `/instances/{instance_id}/comments` | POST | `{"content":"评论内容","user_id":"ou_xxx"}` | 添加审批评论 |
+| 获取评论 | `/instances/{instance_id}/comments` | GET | - | 查询评论列表 |
+
+---
+
+## 常见参数说明
+
+**user_id_type**: 用户 ID 类型
+- `open_id`（默认）
+- `user_id`
+- `union_id`
+
+**分页参数**:
+- `page_size`: 每页数量（默认 20，最大 100）
+- `page_token`: 分页标记
+
+**实例状态**:
+- `PENDING`: 审批中
+- `APPROVED`: 已通过
+- `REJECTED`: 已拒绝
+- `CANCELED`: 已撤回
+- `DELETED`: 已删除
+
+---
+
+## 测试示例
+
+**获取审批定义列表**:
+```bash
+curl -X GET "https://open.feishu.cn/open-apis/approval/v4/approvals?page_size=10" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**创建审批实例**:
+```bash
+curl -X POST "https://open.feishu.cn/open-apis/approval/v4/instances" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "approval_code": "7C468A54-8745-2245-9675-08B7C63E7A85",
+    "user_id": "ou_xxx",
+    "form": "{\"widget1\":\"请假3天\"}"
+  }'
+```
+
+**查询实例列表**:
+```bash
+curl -X GET "https://open.feishu.cn/open-apis/approval/v4/instances?page_size=20&user_id=ou_xxx" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## 最佳实践
+
+1. **先获取审批定义**（确认 form 字段）
+2. **form 必须字符串化 JSON**
+3. **审批操作需审批人权限**
+4. **分页查询**：大量数据用 page_token 分页
+5. **user_id 必填**：创建实例和查询列表都需要指定 user_id

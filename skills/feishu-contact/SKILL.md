@@ -1,93 +1,97 @@
 ---
 name: feishu-contact
-description: 飞书组织架构与 ID 转换 Skill。搜索成员、获取部门信息、创建部门、ID 互转（OpenID/UserID/UnionID）。当需要查找飞书用户、管理组织架构或在不同 ID 体系间转换时使用此 Skill。
+description: 飞书组织架构与 ID 转换。搜索成员、部门管理、ID 互转（OpenID/UserID/UnionID）。
 required_permissions:
   - contact:user.base:readonly
   - directory:department:read
-  - directory:department:write
-  - directory:employee.create:write
   - directory:employee.idconvert:read
-  - directory:department.idconvert:read
-  - directory:job_title.base:read
-  - directory:place.base:read
-  - admin:app.user_usable:readonly
 ---
 
 # 飞书组织架构与 ID 转换
 
-你是飞书通讯录管理专家，负责通过 Contact v3 API 实现成员搜索、部门管理和 ID 转换。
+通过 Contact v3 API 实现成员搜索、部门管理和 ID 转换。
 
 ---
 
-## 一、API 基础信息
+## API 基础
 
-| 项目 | 值 |
-|------|---|
-| Base URL | `https://open.feishu.cn/open-apis/contact/v3` |
-| 认证方式 | `Authorization: Bearer {tenant_access_token}` |
-| Content-Type | `application/json` |
+**Base URL**: `https://open.feishu.cn/open-apis/contact/v3`  
+**认证**: `Authorization: Bearer {tenant_access_token}`
 
 ---
 
-## 二、成员查询
+## 成员查询
 
-### 1. 搜索成员（通过邮箱/手机号获取 OpenID）
-
-```
-GET /open-apis/contact/v3/users/batch_get_id
-```
-
-**实测心法**：支持邮箱、手机号等多种输入，是对接外部系统的核心桥梁。
-
-### 2. 获取成员职务
-
-```
-GET /open-apis/contact/v3/job_titles/{job_title_id}
-```
-
-**实测心法**：职务信息需在管理后台预先维护。可基于职级进行自动化审批路由。
+| API | 端点 | 说明 |
+|-----|------|------|
+| 搜索成员 | `GET /users/batch_get_id` | 通过邮箱/手机号获取 OpenID |
+| 获取职务 | `GET /job_titles/{id}` | 需在管理后台预先维护 |
 
 ---
 
-## 三、部门管理
+## 部门管理
 
-### 3. 获取部门信息
+| API | 端点 | 方法 | 请求体示例 | 说明 |
+|-----|------|------|-----------|------|
+| 获取部门 | `/departments/{department_id}` | GET | - | 查询单个部门详情 |
+| 获取部门列表 | `/departments` | GET | - | 支持 `parent_department_id` 参数 |
+| 获取父部门路径 | `/departments/{department_id}/parent` | GET | - | 获取部门层级路径 |
+| 创建部门 | `/departments` | POST | `{"name":"新部门","parent_department_id":"0"}` | 需管理员权限 |
+| 更新部门 | `/departments/{department_id}` | PUT | `{"name":"更新后的名称"}` | 修改部门信息 |
+| 删除部门 | `/departments/{department_id}` | DELETE | - | 删除空部门 |
+| 入职成员 | `/users` | POST | `{"name":"张三","mobile":"138...","department_ids":["od_xxx"]}` | 创建用户 |
+| 更新用户 | `/users/{user_id}` | PUT | `{"name":"新名字"}` | 修改用户信息 |
+| 删除用户 | `/users/{user_id}` | DELETE | - | 移除用户 |
+| 获取用户列表 | `/users` | GET | - | 支持 `department_id` 过滤 |
 
-```
-GET /open-apis/contact/v3/departments/{department_id}
-```
-
-**实测心法**：`department_id` 有多种格式（OpenID / CustomID），注意区分。
-
-### 4. 创建部门
-
-```
-POST /open-apis/contact/v3/departments
-```
-
-```json
-{ "name": "新部门", "parent_department_id": "0" }
-```
-
-**实测心法**：操作敏感，通常需最高管理权限。建议在预发环境多测试。
-
-### 5. 入职成员
-
-```
-POST /open-apis/contact/v3/users
-```
-
-```json
-{ "name": "张三", "mobile": "13800138000", "department_ids": ["od_xxx"] }
-```
-
-**实测心法**：合规性操作，建议在预发环境多测试。
+⚠️ 创建部门和入职成员需最高权限，建议预发环境测试。
 
 ---
 
-## 四、ID 转换（核心）
+## 用户组管理
 
-飞书有三种用户 ID 体系，对接外部系统时经常需要互转：
+| API | 端点 | 方法 | 请求体示例 | 说明 |
+|-----|------|------|-----------|------|
+| 获取用户组列表 | `/groups` | GET | - | 查询所有用户组 |
+| 获取用户组 | `/groups/{group_id}` | GET | - | 查询单个用户组 |
+| 创建用户组 | `/groups` | POST | `{"name":"项目组","description":"描述"}` | 创建新用户组 |
+| 更新用户组 | `/groups/{group_id}` | PUT | `{"name":"新名称"}` | 修改用户组 |
+| 删除用户组 | `/groups/{group_id}` | DELETE | - | 删除用户组 |
+| 获取组成员 | `/groups/{group_id}/members` | GET | - | 查询组成员列表 |
+| 添加组成员 | `/groups/{group_id}/members` | POST | `{"member_id":"ou_xxx","member_type":"user"}` | 添加用户到组 |
+| 移除组成员 | `/groups/{group_id}/members/{member_id}` | DELETE | - | 从组移除用户 |
+
+---
+
+## 职级管理
+
+| API | 端点 | 方法 | 请求体示例 | 说明 |
+|-----|------|------|-----------|------|
+| 获取职级列表 | `/job_families` | GET | - | 查询所有职级 |
+| 获取职级 | `/job_families/{job_family_id}` | GET | - | 查询单个职级 |
+| 创建职级 | `/job_families` | POST | `{"name":"高级工程师"}` | 创建新职级 |
+| 更新职级 | `/job_families/{job_family_id}` | PUT | `{"name":"资深工程师"}` | 修改职级 |
+| 删除职级 | `/job_families/{job_family_id}` | DELETE | - | 删除职级 |
+
+---
+
+## 角色管理
+
+| API | 端点 | 方法 | 请求体示例 | 说明 |
+|-----|------|------|-----------|------|
+| 获取角色列表 | `/roles` | GET | - | 查询所有角色 |
+| 创建角色 | `/roles` | POST | `{"role_name":"管理员"}` | 创建新角色 |
+| 更新角色 | `/roles/{role_id}` | PUT | `{"role_name":"超级管理员"}` | 修改角色名称 |
+| 删除角色 | `/roles/{role_id}` | DELETE | - | 删除角色 |
+| 获取角色成员 | `/roles/{role_id}/members` | GET | - | 查询角色下所有成员 |
+| 批量添加角色成员 | `/roles/{role_id}/members/batch_create` | POST | `{"members":[{"member_id":"ou_xxx","member_type":"user"}]}` | 批量添加成员 |
+| 批量删除角色成员 | `/roles/{role_id}/members/batch_delete` | POST | `{"members":[{"member_id":"ou_xxx"}]}` | 批量移除成员 |
+
+---
+
+## ID 转换（核心）
+
+飞书三种 ID 体系：
 
 | ID 类型 | 说明 | 使用场景 |
 |---------|------|---------|
@@ -95,47 +99,74 @@ POST /open-apis/contact/v3/users
 | `user_id` | 企业内唯一 | 企业内部系统对接 |
 | `union_id` | 跨应用唯一 | 同一开发者的多个应用间 |
 
-### 6. 用户 ID 转换
+### Contact v3 ID 转换
 
+| API | 端点 | 方法 | 请求体示例 | 说明 |
+|-----|------|------|-----------|------|
+| 批量获取用户 ID | `/users/batch_get_id` | POST | `{"emails":["a@b.com"],"mobiles":["138xxx"]}` | 通过邮箱/手机获取 OpenID |
+| 批量获取部门 ID | `/departments/batch_get_id` | POST | `{"department_ids":["od_xxx"]}` | 部门 ID 转换 |
+| 获取用户 | `/users/{user_id}` | GET | - | 通过 ID 获取用户信息 |
+| 获取用户信息（批量） | `/users/batch_get` | GET | - | 参数：`user_ids=ou_1,ou_2` |
+
+**ID 转换最佳实践：**
+
+通过 `GET /users/{user_id}` 接口可一次性获取用户的所有 ID 类型（open_id/user_id/union_id），无需单独转换。
+
+**示例：**
+```bash
+GET /contact/v3/users/ou_xxx?user_id_type=open_id
 ```
-POST /open-apis/contact/v3/users/batch_get_id
+
+**响应包含：**
+```json
+{
+  "data": {
+    "user": {
+      "open_id": "ou_xxx",
+      "user_id": "7c43cd5f",
+      "union_id": "on_xxx"
+    }
+  }
+}
 ```
-
-**实测心法**：对接外部系统（如微信、钉钉）时的核心桥梁。
-
-### 7. 部门 ID 转换
-
-```
-POST /open-apis/contact/v3/departments/batch_get_id
-```
-
-**实测心法**：处理跨企业租户合并时的利器。
 
 ---
 
-## 五、其他
+## 其他
 
-### 8. 获取办公地点列表
+| API | 端点 | 方法 | 说明 |
+|-----|------|------|------|
+| 获取职务列表 | `/job_titles` | GET | 查询所有预设职务 |
+| 获取职务 | `/job_titles/{job_title_id}` | GET | 查询单个职务详情 |
+| 获取办公地点 | `/places` | GET | 用于人员地理分布分析 |
+| 获取人员类型 | `/employee_types` | GET | 查询人员类型列表 |
+| 获取自定义属性 | `/custom_attr_events` | GET | 查询自定义属性变更事件 |
+| 获取授权范围 | `/scopes` | GET | 查询应用可访问的部门/用户范围 |
+| 外部成员访问 | `/application/v1/applications/{app_id}/user_usable` | GET | 控制供应商/外包访问权限 |
 
-```
-GET /open-apis/contact/v3/places
-```
+## 事件订阅
 
-**实测心法**：地点 ID 可用于人员地理分布分析，适配多地办公的项目组。
+通讯录支持 17 个变更事件：
 
-### 9. 管理外部成员访问
-
-```
-GET /open-apis/application/v1/applications/{app_id}/user_usable
-```
-
-**实测心法**：控制供应商/外包团队对项目的访问权限，合规性管控的核心。
+| 事件类型 | 说明 |
+|---------|------|
+| `contact.user.created_v3` | 用户创建 |
+| `contact.user.updated_v3` | 用户信息更新 |
+| `contact.user.deleted_v3` | 用户删除 |
+| `contact.dept.created_v3` | 部门创建 |
+| `contact.dept.updated_v3` | 部门更新 |
+| `contact.dept.deleted_v3` | 部门删除 |
+| `contact.employee_type.created_v3` | 人员类型创建 |
+| `contact.employee_type.updated_v3` | 人员类型更新 |
+| `contact.employee_type.deleted_v3` | 人员类型删除 |
+| `contact.job_family.created_v3` | 职级创建 |
+| `contact.job_family.updated_v3` | 职级更新 |
+| `contact.job_family.deleted_v3` | 职级删除 |
 
 ---
 
-## 六、最佳实践
+## 最佳实践
 
-1. **ID 转换先行**：对接外部系统前，先通过 batch_get_id 建立 ID 映射
-2. **权限敏感**：创建部门、入职成员等操作需最高权限，谨慎使用
-3. **缓存 ID**：频繁查询的用户 ID 建议本地缓存，减少 API 调用
-4. **预发测试**：组织架构变更操作务必在预发环境验证
+1. **ID 转换优先用 Spark API**（更简洁）
+2. **缓存常用 ID**（减少 API 调用）
+3. **组织架构变更必须预发测试**

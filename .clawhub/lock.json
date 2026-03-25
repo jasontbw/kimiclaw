@@ -4,6 +4,42 @@
     "feishu-calendar": {
       "version": "1.0.0",
       "installedAt": 1772780176855
+    },
+    "skill-vetter": {
+      "version": "1.0.0",
+      "installedAt": 1773492368181
+    },
+    "self-improving": {
+      "version": "1.2.16",
+      "installedAt": 1773492443228
+    },
+    "daily-digest": {
+      "version": "1.0.0",
+      "installedAt": 1773492453656
+    },
+    "cron-scheduler": {
+      "version": "1.0.0",
+      "installedAt": 1773492463237
+    },
+    "github": {
+      "version": "1.0.0",
+      "installedAt": 1773492473913
+    },
+    "notion": {
+      "version": "1.0.0",
+      "installedAt": 1773492484814
+    },
+    "playwright": {
+      "version": "1.0.3",
+      "installedAt": 1773492504992
+    },
+    "files": {
+      "version": "1.0.0",
+      "installedAt": 1773492522125
+    },
+    "tavily": {
+      "version": "1.0.0",
+      "installedAt": 1773492530846
     }
   }
 }
